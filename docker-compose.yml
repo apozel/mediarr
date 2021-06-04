@@ -113,3 +113,14 @@ services:
         restart: always
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+    jackett:
+        image: ghcr.io/linuxserver/jackett
+        container_name: jackett
+        environment:
+            - TZ=Europe/Paris
+            - AUTO_UPDATE=true
+        volumes:
+            - ./config/jackett/config:/config
+            - ./config/nzbget/downloads:/downloads
+        ports:
+            - 9117:9117
