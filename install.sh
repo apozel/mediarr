@@ -4,10 +4,10 @@
 listePlex=("Movies" "Shows" "Music" "AudioBook" "transcode")
 
 #liste des containers :
-listeContainer=("plex" "jackett" "nzbget" "sonarr" "radarr" "overseerr" "letsencrypt" "timemachine" "portainer" "watchtower")
+listeContainer=("plex" "jackett" "transmission" "nzbget" "sonarr" "radarr" "overseerr" "letsencrypt" "timemachine" "portainer" "watchtower")
 
 #special folder
-listeFolder=("nzbget/download")
+listeFolder=("nzbget/downloads" "transmission/download" "transmission/blackhole")
 
 # add config folder
 
