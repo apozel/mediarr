@@ -33,8 +33,7 @@ services:
             - nzbget
         volumes:
             - ./config/sonarr/config:/config
-            - ./config/nzbget/downloads:/downloads/nzbget
-            - ./config/transmission/download:/downloads/transmission
+            - ./config/transmission/download:/downloads/
             - ./config/plex/Shows:/tv
         environment:
             - TZ=Europe/Paris
@@ -109,12 +108,6 @@ services:
             - ./config/portainer:/data
             - /var/run/docker.sock:/var/run/docker.sock
         restart: always
-    watchtower:
-        image: v2tec/watchtower
-        container_name: watchtower
-        restart: always
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
     jackett:
         image: ghcr.io/linuxserver/jackett
         container_name: jackett
