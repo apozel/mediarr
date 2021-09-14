@@ -1,139 +1,136 @@
-version: '2'
+version: "3.3"
 services:
-    plex:
-        image: linuxserver/plex
-        container_name: plex
-        volumes:
-            - ./config/plex/config:/config
-            - ./config/plex/Movies:/data/movies
-            - ./config/plex/Shows:/data/tvshows
-            - ./config/plex/Music:/data/music
-            - ./config/plex/AudioBook:/data/audiobook
-            - ./config/plex/transcode:/data/transcode
-        network_mode: host
-        restart: always
-        environment:
-            - VERSION=latest
-            - TZ=Europe/Paris
-    nzbget:
-        image: linuxserver/nzbget
-        container_name: nzbget
-        volumes:
-            - ./config/nzbget/config:/config
-            - ./config/nzbget/downloads:/downloads
-        restart: always
-        environment:
-            - TZ=Europe/Paris
-        ports:
-            - 6789:6789
-    sonarr:
-        image: linuxserver/sonarr
-        container_name: sonarr
-        depends_on:
-            - nzbget
-        volumes:
-            - ./config/sonarr/config:/config
-            - ./config/transmission/download:/downloads/
-            - ./config/plex/Shows:/tv
-        environment:
-            - TZ=Europe/Paris
-        ports:
-            - 8989:8989
-    radarr:
-        image: linuxserver/radarr
-        container_name: radarr
-        depends_on:
-            - nzbget
-        volumes:
-            - ./config/radarr/config:/config
-            - ./config/nzbget/downloads:/downloads/nzbget
-            - ./config/transmission/download:/downloads/transmission
-            - ./config/plex/Movies:/movies
-        environment:
-            - TZ=Europe/Paris
-        ports:
-            - 7878:7878
-    overseerr:
-        image: sctx/overseerr:latest
-        container_name: overseerr
-        environment:
-            - LOG_LEVEL=info
-            - TZ=Europe/Paris
-        ports:
-            - 5055:5055
-        volumes:
-            - ./config/overseerr/config:/app/config
-        restart: unless-stopped
-    letsencrypt:
-        image: linuxserver/letsencrypt
-        container_name: letsencrypt
-        ports:
-            - 443:443
-            # Only for validation, redirect all http traffic to https in config
-            - 80:80
-        volumes:
-            - ./config/letsencrypt/config:/config
-        restart: always
-        depends_on:
-            - nzbget
-            - sonarr
-            - radarr
-        environment:
-            - TZ=Europe/Paris
-            - EMAIL=tomchaillan@gmail.com
-            - URL=westbay.fr
-            - SUBDOMAINS=toulon
-            - ONLY_SUBDOMAINS=true
-            # tns validation doesn't work
-            - VALIDATION=http
-    # Still requires user to be added. See github for more details
-    timemachine:
-        image: odarriba/timemachine
-        container_name: timemachine
-        restart: unless-stopped
-        volumes:
-            - ./config/timemachine:/timemachine
-        ports:
-            - 548:548
-            - 636:636
-        environment:
-            - AFP_SIZE_LIMIT=250000
-            - AFP_NAME=Backups
-    portainer:
-        image: portainer/portainer
-        container_name: portainer
-        ports:
-            - 9000:9000
-        volumes:
-            - ./config/portainer:/data
-            - /var/run/docker.sock:/var/run/docker.sock
-        restart: always
-    jackett:
-        image: ghcr.io/linuxserver/jackett
-        container_name: jackett
-        environment:
-            - TZ=Europe/Paris
-            - AUTO_UPDATE=true
-        volumes:
-            - ./config/jackett/config:/config
-            - ./config/transmission/blackhole:/downloads
-        ports:
-            - 9117:9117
-    transmission:
-        image: ghcr.io/linuxserver/transmission
-        container_name: transmission
-        environment:
-            - PUID=1000
-            - PGID=1000
-            - TZ=Europe/Paris
-            - USER=username #optional
-            - PASS=password #optional
-        volumes:
-            - ./config/transmission/config:/config
-            - ./config/transmission/download:/downloads
-            - ./config/transmission/blackhole:/watch
-        ports:
-            - 9091:9091
-            - 51413:51413
-            - 51413:51413/udp
-        restart: unless-stopped
+  plex:
+    image: linuxserver/plex:latest
+    container_name: plex
+    volumes:
+      - ./config/plex/config:/config
+      - ./config/plex/Movies:/data/movies
+      - ./config/plex/Shows:/data/tvshows
+      - ./config/plex/Music:/data/music
+      - ./config/plex/AudioBook:/data/audiobook
+      - ./config/plex/transcode:/data/transcode
+    ports:
+      - 32400:32400
+      - 1900:1900/udp
+      - 3005:3005
+      - 5353:5353/udp
+      - 8324:8324
+      - 32410:32410/udp
+      - 32412:32412/udp
+      - 32413:32413/udp
+      - 32414:32414/udp
+      - 32469:32469
+    restart: always
+    environment:
+      - VERSION=latest
+      - TZ=Europe/Paris
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    depends_on:
+      - qbittorrent
+    volumes:
+      - ./config/sonarr/config:/config
+      - ./config/qbittorrent/downloads:/downloads
+      - ./config/plex/Shows:/tv
+    environment:
+      - TZ=Europe/Paris
+    ports:
+      - 8989:8989
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    depends_on:
+      - qbittorrent
+    volumes:
+      - ./config/radarr/config:/config
+      - ./config/qbittorrent/downloads:/downloads
+      - ./config/plex/Movies:/movies
+    environment:
+      - TZ=Europe/Paris
+    ports:
+      - 7878:7878
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Europe/Paris
+    ports:
+      - 5055:5055
+    volumes:
+      - ./config/overseerr/config:/app/config
+    restart: unless-stopped
+  letsencrypt:
+    image: linuxserver/letsencrypt
+    container_name: letsencrypt
+    ports:
+      - 443:443
+      # Only for validation, redirect all http traffic to https in config
+      - 80:80
+    volumes:
+      - ./config/letsencrypt/config:/config
+    restart: always
+    depends_on:
+      - qbittorrent
+      - sonarr
+      - radarr
+    environment:
+      - TZ=Europe/Paris
+      - EMAIL=tomchaillan@gmail.com
+      - URL=westbay.fr
+      - SUBDOMAINS=toulon
+      - ONLY_SUBDOMAINS=true
+      # tns validation doesn't work
+      - VALIDATION=http
+  # Still requires user to be added. See github for more details
+  timemachine:
+    image: odarriba/timemachine
+    container_name: timemachine
+    restart: unless-stopped
+    volumes:
+      - ./config/timemachine:/timemachine
+    ports:
+      - 548:548
+      - 636:636
+    environment:
+      - AFP_SIZE_LIMIT=250000
+      - AFP_NAME=Backups
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    ports:
+      - 9000:9000
+    volumes:
+      - ./config/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+  jackett:
+    image: ghcr.io/linuxserver/jackett
+    container_name: jackett
+    environment:
+      - TZ=Europe/Paris
+      - AUTO_UPDATE=true
+    volumes:
+      - ./config/jackett/config:/config
+      - ./config/transmission/blackhole:/downloads
+    ports:
+      - 9117:9117
+
+  qbittorrent:
+    image: ghcr.io/linuxserver/qbittorrent
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - WEBUI_PORT=8080
+    volumes:
+      - ./config/qbittorrent/config:/config
+      - ./config/qbittorrent/downloads:/downloads
+    ports:
+      - 6881:6881
+      - 6881:6881/udp
+      - 8080:8080
+    restart: unless-stopped
