@@ -1,0 +1,4 @@
+dns_ovh_endpoint = ovh-eu
+dns_ovh_application_key = cc52ebb4ac7d526b
+dns_ovh_application_secret = 01b705c6cdb39f8cd572f5b7a3d878c3
+dns_ovh_consumer_key = 9b5b0a89455113fdc226e6a3be7f6164

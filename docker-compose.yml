@@ -1,49 +1,39 @@
-version: "3.3"
 services:
-  plex:
-    image: plexinc/pms-docker
-    container_name: plex
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    user: 1000:1000
+    # network_mode: 'host'
     volumes:
-      - ./config/plex/config:/config
-      - /media/apozel/hardDisk2/Movies:/data/movies
-      - /media/apozel/hardDisk3/FILMS:/data/movies2
-      - /media/apozel/hardDisk1/Shows:/data/tvshows
-      - /home/apozel/Musique:/data/music
-    ports:
-      - 32400:32400
-      - 1900:1900/udp
-      - 3005:3005
-      - 5354:5353/udp
-      - 8324:8324
-      - 32410:32410/udp
-      - 32412:32412/udp
-      - 32413:32413/udp
-      - 32414:32414/udp
-      - 32469:32469
-    restart: always
+      - ./config/jellyfin/config:/config
+      - ./config/jellyfin/cache:/cache
+      - /media/apozel/hardDisk/Movies:/movies
+      - /media/apozel/hardDisk/Shows:/tvshows
+    restart: 'unless-stopped'
+    # Optional - alternative address used for autodiscovery
     environment:
-      - VERSION=latest
-      - TZ=Europe/Paris
-      - ADVERTISE_IP=http://192.168.1.103:32400/
-      - PLEX_CLAIM=claim-eYHgfK2TBEzn7H9x5fmt
-      - PLEX_UID=1000
-      - PLEX_GID=1000
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.westbay.fr
+    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
+    # extra_hosts:
+    #   - 'host.docker.internal:host-gateway'
+    ports:
+      - 1900:1900/udp 
+      - 7359:7359/udp
 
   sonarr:
     image: linuxserver/sonarr
     container_name: sonarr
+    restart: unless-stopped
     depends_on:
       - qbittorrent
     volumes:
       - ./config/sonarr/config:/config
       - ./config/qbittorrent/downloads:/downloads
-      - /media/apozel/hardDisk1/Shows:/tv
+      - /media/apozel/hardDisk/Shows:/tv
     environment:
       - TZ=Europe/Paris
       - PUID=1000
       - PGID=1000
-    ports:
-      - 8989:8989
 
   radarr:
     image: linuxserver/radarr
@@ -53,15 +43,13 @@ services:
     volumes:
       - ./config/radarr/config:/config
       - ./config/qbittorrent/downloads:/downloads
-      - /media/apozel/hardDisk2/Movies:/movies
-
+      - /media/apozel/hardDisk/Movies:/movies
+    restart: unless-stopped
     environment:
       - TZ=Europe/Paris
       - PUID=1000
       - PGID=1000
-    ports:
-      - 7878:7878
-
+  
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
@@ -71,61 +59,91 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./config/bazarr/config:/config
-      - /media/apozel/hardDisk2/Movies:/movies
-      - /media/apozel/hardDisk1/Shows:/tvshows
-    ports:
-      - 6767:6767
+      - /media/apozel/hardDisk/Movies:/movies
+      - /media/apozel/hardDisk/Shows:/tvshows
     restart: unless-stopped
 
   overseerr:
     image: sctx/overseerr:latest
     container_name: overseerr
+    restart: unless-stopped
     environment:
       - LOG_LEVEL=info
       - TZ=Europe/Paris
-    ports:
-      - 5055:5055
     volumes:
       - ./config/overseerr/config:/app/config
-    restart: unless-stopped
-
-  portainer:
-    image: portainer/portainer
-    container_name: portainer
-    ports:
-      - 9000:9000
-    volumes:
-      - ./config/portainer:/data
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: always
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
+    restart: unless-stopped
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
       - ./config/prowlarr:/config
-    ports:
-      - 9696:9696
-    restart: unless-stopped
 
   qbittorrent:
     image: ghcr.io/linuxserver/qbittorrent
     container_name: qbittorrent
     dns: 8.8.8.8
+    restart: unless-stopped
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/London
+      - TZ=Europe/Paris
       - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
     volumes:
       - ./config/qbittorrent/config:/config
       - ./config/qbittorrent/downloads:/downloads
     ports:
       - 6881:6881
       - 6881:6881/udp
-      - 8080:8080
+
+  flaresolverr:
+    # DockerHub mirror flaresolverr/flaresolverr:latest
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
     restart: unless-stopped
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=Europe/Paris
+    ports:
+      - "${PORT:-8191}:8191"
+
+  nginx:
+    container_name: nginx
+    image: nginx:mainline-alpine
+    restart: unless-stopped
+    volumes:
+    - ./reverse-proxy/:/etc/nginx/conf.d/:ro
+    - letsencrypt-jellyfin:/etc/letsencrypt
+    ports:
+    - "80:80"
+    - "443:443"
+
+  # diun:
+  #   image: crazymax/diun:latest
+  #   container_name: diun
+  #   command: serve
+  #   volumes:
+  #     - "./data:/data"
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+  #   environment:
+  #     - "TZ=Europe/Paris"
+  #     - "LOG_LEVEL=info"
+  #     - "LOG_JSON=false"
+  #     - "DIUN_WATCH_WORKERS=20"
+  #     - "DIUN_WATCH_SCHEDULE=0 */6 * * *"
+  #     - "DIUN_WATCH_JITTER=30s"
+  #     - "DIUN_PROVIDERS_DOCKER=true"
+  #     - "DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true"
+  #   restart: always
+
+volumes:
+  letsencrypt-jellyfin:
+    external: true
